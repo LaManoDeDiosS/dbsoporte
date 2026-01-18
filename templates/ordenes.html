@@ -68,28 +68,29 @@
         {% endif %}
     </td>
 
-    <td>
-        {% if o.adjuntos %}
-            <ul>
+ <td>
+    {% if o.adjuntos %}
+        <ul style="margin:0; padding-left:15px;">
             {% for a in o.adjuntos %}
                 <li>
                     <a href="{{ url_for('descargar', adjunto_id=a.id) }}">
-                {{ a.archivo }}
+                        {{ a.archivo }}
                     </a>
 
                     {% if current_user.rol == 'admin' %}
-                | <a href="{{ url_for('eliminar_adjunto', adjunto_id=a.id) }}"
-                     onclick="return confirm('¿Eliminar archivo?')">
-                    Eliminar
+                        | <a href="{{ url_for('eliminar_adjunto', adjunto_id=a.id) }}"
+                             onclick="return confirm('¿Eliminar archivo?')">
+                            Eliminar
                           </a>
                     {% endif %}
                 </li>
             {% endfor %}
-            </ul>
-        {% else %}
-            Sin archivos
-        {% endif %}
-    </td>
+        </ul>
+    {% else %}
+        Sin archivos
+    {% endif %}
+</td>
+
 <td>
     <a href="{{ url_for('descargar_pdf_orden', orden_id=o.id) }}">
         Descargar PDF
