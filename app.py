@@ -1,5 +1,6 @@
 # Prueba Git Ok
 # Prueba Fase 15
+# Rama desarrollo activa
 
 # ----------- Librerías estándar de Python -----------
 import os
