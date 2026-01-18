@@ -34,3 +34,5 @@ class Adjunto(db.Model):
     archivo = db.Column(db.String(255), nullable=False)
     orden_id = db.Column(db.Integer, db.ForeignKey('ordenes.id'), nullable=False)
     orden = db.relationship('Orden', back_populates='adjuntos')
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
+    usuario = db.relationship('Usuario')

@@ -75,6 +75,9 @@
                 <li>
                     <a href="{{ url_for('descargar', adjunto_id=a.id) }}">
                         {{ a.archivo }}
+                        <small style="color:gray;">
+    ({{ a.usuario.email if a.usuario else 'usuario desconocido' }})
+</small>
                     </a>
 
                     {% if current_user.rol == 'admin' %}

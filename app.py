@@ -1,7 +1,3 @@
-# Prueba Git Ok
-# Prueba Fase 15
-# Rama desarrollo activa
-
 # ----------- Librerías estándar de Python -----------
 import os
 
@@ -12,7 +8,7 @@ from sqlalchemy import func
 from werkzeug.utils import secure_filename
 
 # ----------- Flask y extensiones -----------
-from flask import Flask, render_template, redirect, url_for, flash, request,make_response,send_file
+from flask import Flask, render_template, redirect, url_for, flash, request,make_response,send_file,send_from_directory
 from flask_login import LoginManager, login_user, login_required, current_user
 
 # ----------- Archivos del proyecto -----------
@@ -144,7 +140,11 @@ def ordenes():
                 ruta = os.path.join(app.config['UPLOAD_FOLDER'], nombre)
                 file.save(ruta)
 
-                adj = Adjunto(archivo=nombre, orden_id=orden.id)
+                adj = Adjunto(
+                    archivo=nombre,
+                    orden_id=orden.id,
+                    usuario_id=current_user.id
+                )
                 db.session.add(adj)
 
         db.session.commit()
@@ -225,8 +225,13 @@ def descargar_pdf_orden(orden_id):
 
     return send_file(ruta_pdf, as_attachment=True)
 
+#-------------- Descargar--------------@
+@app.route('/descargar/<int:adjunto_id>')
+@login_required
+def descargar(adjunto_id):
+    adjunto = Adjunto.query.get_or_404(adjunto_id)
 
-
+    return send_from_directory(app.config['UPLOAD_FOLDER'], adjunto.archivo , as_attachment=True)
 # ---------------------------------
 
 if __name__ == '__main__':
