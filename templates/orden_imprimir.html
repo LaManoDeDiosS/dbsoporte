@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Orden #{{ orden.numero }}</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+        }
+        h2 {
+            text-align: center;
+        }
+        hr {
+            margin: 15px 0;
+        }
+        .campo {
+            margin-bottom: 8px;
+        }
+        .label {
+            font-weight: bold;
+        }
+
+        /* Ocultar botones al imprimir */
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<h2>ORDEN DE SERVICIO</h2>
+
+<div class="campo">
+    <span class="label">Número:</span> {{ orden.numero }}
+</div>
+
+<div class="campo">
+    <span class="label">Cliente:</span> {{ orden.cliente.nombre }}
+</div>
+
+<div class="campo">
+    <span class="label">Persona que reporta:</span> {{ orden.persona_reporta }}
+</div>
+
+<div class="campo">
+    <span class="label">Fecha:</span>
+    {% if orden.fecha %}
+        {{ orden.fecha.strftime('%Y-%m-%d %H:%M') }}
+    {% else %}
+        Sin fecha
+    {% endif %}
+</div>
+
+<hr>
+
+<div class="campo">
+    <span class="label">Observaciones:</span><br>
+    {{ orden.descripcion }}
+</div>
+
+<hr>
+
+<h4>Archivos adjuntos</h4>
+{% if orden.adjuntos %}
+<ul>
+{% for a in orden.adjuntos %}
+    <li>{{ a.archivo }}</li>
+{% endfor %}
+</ul>
+{% else %}
+<p>Sin archivos adjuntos</p>
+{% endif %}
+
+<hr>
+
+<div class="no-print">
+    <button onclick="window.print()">🖨 Imprimir</button>
+    <a href="{{ url_for('detalle_orden', orden_id=orden.id) }}">⬅ Volver</a>
+</div>
+
+</body>
+</html>

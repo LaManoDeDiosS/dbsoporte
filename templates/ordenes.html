@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Órdenes de Servicio</title>
+</head>
+<body>
+
+<h2>Órdenes de Servicio</h2>
+
+{% if current_user.rol == 'admin' %}
+<h3>Registrar nueva orden</h3>
+
+<form method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+
+    {{ form.cliente.label }}<br>
+    {{ form.cliente() }}<br><br>
+
+    {{ form.persona.label }}<br>
+    {{ form.persona() }}<br><br>
+
+    {{ form.descripcion.label }}<br>
+    {{ form.descripcion(rows=4) }}<br><br>
+
+    {{ form.archivos.label }}<br>
+    {{ form.archivos(multiple=True) }}<br><br>
+
+    {{ form.submit() }}
+</form>
+
+<hr>
+{% endif %}
+
+<h3>Listado de órdenes</h3>
+
+<table border="1" cellpadding="6">
+<tr>
+    <th>Número</th>
+    <th>Cliente</th>
+    <th>Persona</th>
+    <th>Observación</th>
+    <th>Fecha</th>
+    <th>Archivos</th>
+    <th>Descarga</th>
+
+</tr>
+
+{% for o in ordenes %}
+<tr>
+    <td>
+    <a href="{{ url_for('detalle_orden', orden_id=o.id) }}">
+        {{ o.numero }}
+    </a>
+</td>
+
+    <td>{{ o.cliente.nombre }}</td>
+
+    <td>{{ o.persona_reporta }}</td>
+
+    <td>{{ o.descripcion }}</td>
+
+    <td>
+        {% if o.fecha %}
+            {{ o.fecha.strftime('%Y-%m-%d %H:%M') }}
+        {% else %}
+            Sin fecha
+        {% endif %}
+    </td>
+
+    <td>
+        {% if o.adjuntos %}
+            <ul>
+            {% for a in o.adjuntos %}
+                <li>
+                    <a href="{{ url_for('static', filename='uploads/' ~ a.archivo) }}" target="_blank">
+                        {{ a.archivo }}
+                    </a>
+
+                    {% if current_user.rol == 'admin' %}
+                        | <a href="{{ url_for('eliminar_adjunto', adjunto_id=a.id) }}"
+                             onclick="return confirm('¿Eliminar archivo?')">
+                             Eliminar
+                          </a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            Sin archivos
+        {% endif %}
+    </td>
+<td>
+    <a href="{{ url_for('descargar_pdf_orden', orden_id=o.id) }}">
+        Descargar PDF
+    </a>
+</td>
+</tr>
+{% endfor %}
+</table>
+
+</body>
+</html>

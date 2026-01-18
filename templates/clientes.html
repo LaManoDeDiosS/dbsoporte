@@ -1,0 +1,17 @@
+<h2>Clientes / Empresas</h2>
+
+<form method="POST">
+    {{ form.hidden_tag() }}
+    {{ form.nombre.label }}<br>
+    {{ form.nombre(size=40) }}<br><br>
+    {{ form.submit() }}
+</form>
+
+<hr>
+
+<h3>Listado de clientes</h3>
+<ul>
+{% for c in clientes %}
+    <li>{{ c.nombre }}</li>
+{% endfor %}
+</ul>

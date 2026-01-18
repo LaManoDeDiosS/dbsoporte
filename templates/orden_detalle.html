@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Orden #{{ orden.numero }}</title>
+</head>
+<body>
+
+<h2>Detalle de Orden de Servicio</h2>
+
+<p><strong>Número:</strong> {{ orden.numero }}</p>
+<p><strong>Cliente:</strong> {{ orden.cliente.nombre }}</p>
+<p><strong>Persona que reporta:</strong> {{ orden.persona_reporta }}</p>
+<p><strong>Observaciones:</strong><br>{{ orden.descripcion }}</p>
+
+<p><strong>Fecha:</strong>
+{% if orden.fecha %}
+    {{ orden.fecha.strftime('%Y-%m-%d %H:%M') }}
+{% else %}
+    Sin fecha
+{% endif %}
+</p>
+
+<hr>
+
+<h3>Archivos adjuntos</h3>
+
+{% if orden.adjuntos %}
+<ul>
+{% for a in orden.adjuntos %}
+    <li>
+        <a href="{{ url_for('static', filename='uploads/' ~ a.archivo) }}" target="_blank">
+            {{ a.archivo }}
+        </a>
+
+        {% if current_user.rol == 'admin' %}
+            | <a href="{{ url_for('eliminar_adjunto', adjunto_id=a.id) }}"
+                 onclick="return confirm('¿Eliminar archivo?')">Eliminar</a>
+        {% endif %}
+    </li>
+{% endfor %}
+</ul>
+{% else %}
+<p>Esta orden no tiene archivos adjuntos.</p>
+{% endif %}
+
+<hr>
+<br><br>
+
+<a href="{{ url_for('imprimir_orden', orden_id=orden.id) }}" target="_blank">
+    🖨 Imprimir Orden
+<br><br>
+<a href="{{ url_for('descargar_pdf_orden', orden_id=orden.id) }}">
+    📄 Descargar PDF
+</a>
+
+</a>
+<a href="{{ url_for('ordenes') }}">⬅ Volver al listado</a>
+
+</body>
+</html>
