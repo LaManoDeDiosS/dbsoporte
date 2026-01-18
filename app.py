@@ -1,3 +1,5 @@
+# ----------- Proyecto DB Soporte - Control de versiones con Git -----------
+
 # ----------- Librerías estándar de Python -----------
 import os
 
