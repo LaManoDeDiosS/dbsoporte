@@ -17,21 +17,16 @@ from models import Usuario, Cliente, Orden, Adjunto
 from forms import LoginForm, ClienteForm, OrdenForm
 from datetime import datetime
 from utils.pdf_orden import generar_pdf_orden
-
+from config import DevelopmentConfig
 
 # ------------ CONFIGURACIÓN ------------
+app = Flask(__name__)
+app.config.from_object(DevelopmentConfig)
+
 
 load_dotenv()
 pymysql.install_as_MySQLdb()
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-
-app.config['SQLALCHEMY_DATABASE_URI'] = (
-    f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@"
-    f"{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
-)
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 UPLOAD_FOLDER = 'static/uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
