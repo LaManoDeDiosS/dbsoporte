@@ -18,10 +18,18 @@ from forms import LoginForm, ClienteForm, OrdenForm
 from datetime import datetime
 from utils.pdf_orden import generar_pdf_orden
 from config import DevelopmentConfig
+from routes.auth import auth_bp
+from routes.ordenes import  ordenes_bp
 
 # ------------ CONFIGURACIÓN ------------
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
+
+# ------------ Login Blueprint------------
+app.register_blueprint(auth_bp)
+
+# ------------ ordenes Blueprint------------
+app.register_blueprint(ordenes_bp)
 
 
 load_dotenv()
@@ -36,7 +44,7 @@ db.init_app(app)
 migrate.init_app(app, db)
 
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'auth.login'
 
 
 @login_manager.user_loader
@@ -50,27 +58,7 @@ def cargar_formulario_orden():
     form.cliente.choices = [(c.id, c.nombre) for c in clientes]
     return form
 
-# ------------ LOGIN ------------
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
-
-    if form.validate_on_submit():
-        usuario = Usuario.query.filter_by(email=form.email.data).first()
-        if usuario and usuario.password == form.password.data:
-            login_user(usuario)
-
-            # 🔹 Admin ve todas las órdenes
-            if usuario.rol == 'admin':
-                return redirect(url_for('ordenes'))
-
-            # 🔹 Lector también entra a /ordenes pero sin formulario
-            return redirect(url_for('ordenes'))
-
-        flash('Correo o contraseña incorrectos')
-
-    return render_template('login.html', form=form)
 
 # ------------ HOME ------------
 
@@ -100,54 +88,6 @@ def clientes():
 
     return render_template('clientes.html', form=form, clientes=lista_clientes)
 
-# ------------ ORDENES ------------
-
-@app.route('/ordenes', methods=['GET', 'POST'])
-@login_required
-def ordenes():
-    form = OrdenForm()
-
-    clientes = Cliente.query.order_by(Cliente.nombre).all()
-    form.cliente.choices = [(c.id, c.nombre) for c in clientes]
-
-    ordenes = Orden.query.order_by(Orden.id.desc()).all()
-
-    # 🔹 Solo admin puede guardar órdenes
-    if current_user.rol == 'admin' and form.validate_on_submit():
-
-        ultimo = db.session.query(func.max(Orden.numero)).scalar()
-        nuevo_numero = 1 if ultimo is None else ultimo + 1
-
-        orden = Orden(
-            numero=nuevo_numero,
-            cliente_id=form.cliente.data,
-            persona_reporta=form.persona.data,
-            descripcion=form.descripcion.data,
-            usuario_id=current_user.id,
-            fecha=datetime.now()
-        )
-
-        db.session.add(orden)
-        db.session.commit()
-
-        for file in form.archivos.data:
-            if file and file.filename:
-                nombre = secure_filename(file.filename)
-                ruta = os.path.join(app.config['UPLOAD_FOLDER'], nombre)
-                file.save(ruta)
-
-                adj = Adjunto(
-                    archivo=nombre,
-                    orden_id=orden.id,
-                    usuario_id=current_user.id
-                )
-                db.session.add(adj)
-
-        db.session.commit()
-        flash('Orden creada correctamente')
-        return redirect(url_for('ordenes'))
-
-    return render_template('ordenes.html', form=form, ordenes=ordenes)
 
 # ------------ DETALLE DE ORDEN ------------
 
