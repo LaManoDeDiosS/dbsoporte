@@ -73,7 +73,7 @@
         <ul style="margin:0; padding-left:15px;">
             {% for a in o.adjuntos %}
                 <li>
-                    <a href="{{ url_for('descargar', adjunto_id=a.id) }}">
+                    <a href="{{ url_for('adjuntos.descargar_adjunto', adjunto_id=a.id) }}">
                         {{ a.archivo }}
                         <small style="color:gray;">
     ({{ a.usuario.email if a.usuario else 'usuario desconocido' }})
@@ -81,7 +81,7 @@
                     </a>
 
                     {% if current_user.rol == 'admin' %}
-                        | <a href="{{ url_for('eliminar_adjunto', adjunto_id=a.id) }}"
+                        | <a href="{{ url_for('adjuntos.eliminar_adjunto', adjunto_id=a.id) }}"
                              onclick="return confirm('¿Eliminar archivo?')">
                             Eliminar
                           </a>

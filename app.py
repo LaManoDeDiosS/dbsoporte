@@ -16,10 +16,14 @@ from extensions import db, migrate
 from models import Usuario, Cliente, Orden, Adjunto
 from forms import LoginForm, ClienteForm, OrdenForm
 from datetime import datetime
+
+
 from utils.pdf_orden import generar_pdf_orden
 from config import DevelopmentConfig
 from routes.auth import auth_bp
 from routes.ordenes import  ordenes_bp
+from routes.clientes import clientes_bp
+from routes.adjuntos import adjuntos_bp
 
 # ------------ CONFIGURACIÓN ------------
 app = Flask(__name__)
@@ -31,6 +35,12 @@ app.register_blueprint(auth_bp)
 # ------------ ordenes Blueprint------------
 app.register_blueprint(ordenes_bp)
 
+#-------------Clientes Blueprint-----------
+app.register_blueprint(clientes_bp)
+
+#-------------Adjuntar Blueprint-----------
+
+app.register_blueprint(adjuntos_bp)
 
 load_dotenv()
 pymysql.install_as_MySQLdb()
@@ -67,28 +77,6 @@ def cargar_formulario_orden():
 def index():
     return redirect(url_for('ordenes'))
 
-# ------------ CLIENTES ------------
-
-@app.route('/clientes', methods=['GET', 'POST'])
-@login_required
-def clientes():
-    if current_user.rol != 'admin':
-        flash('No tienes permisos para crear clientes')
-        return redirect(url_for('ordenes'))
-
-    form = ClienteForm()
-    lista_clientes = Cliente.query.all()
-
-    if form.validate_on_submit():
-        nuevo = Cliente(nombre=form.nombre.data)
-        db.session.add(nuevo)
-        db.session.commit()
-        flash('Cliente creado correctamente')
-        return redirect(url_for('clientes'))
-
-    return render_template('clientes.html', form=form, clientes=lista_clientes)
-
-
 # ------------ DETALLE DE ORDEN ------------
 
 @app.route('/orden/<int:orden_id>')
@@ -120,32 +108,6 @@ def buscar():
 
     return render_template('ordenes.html', ordenes=ordenes, form=OrdenForm())
 
-# ------------ ADJUNTAR ------------
-
-@app.route('/adjunto/<int:adjunto_id>/eliminar')
-@login_required
-def eliminar_adjunto(adjunto_id):
-
-    # 🔒 Seguridad por rol
-    if current_user.rol != 'admin':
-        flash('No tienes permisos para eliminar archivos')
-        return redirect(url_for('ordenes'))
-
-    adjunto = Adjunto.query.get_or_404(adjunto_id)
-
-    # Ruta física del archivo
-    ruta = os.path.join(app.config['UPLOAD_FOLDER'], adjunto.archivo)
-
-    # Eliminar archivo del disco
-    if os.path.exists(ruta):
-        os.remove(ruta)
-
-    # Eliminar registro de la BD
-    db.session.delete(adjunto)
-    db.session.commit()
-
-    flash('Archivo eliminado correctamente')
-    return redirect(url_for('ordenes'))
 
 # ------------ PDF ORDEN ------------
 
@@ -161,13 +123,7 @@ def descargar_pdf_orden(orden_id):
 
     return send_file(ruta_pdf, as_attachment=True)
 
-#-------------- Descargar--------------@
-@app.route('/descargar/<int:adjunto_id>')
-@login_required
-def descargar(adjunto_id):
-    adjunto = Adjunto.query.get_or_404(adjunto_id)
 
-    return send_from_directory(app.config['UPLOAD_FOLDER'], adjunto.archivo , as_attachment=True)
 # ---------------------------------
 
 if __name__ == '__main__':
