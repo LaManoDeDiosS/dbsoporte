@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Orden #{{ orden.numero }}</title>
+</head>
+<body>
+
+<p>
+    <a href="{{ url_for('editar_orden', orden_id=orden.id) }}">⬅ Volver</a>
+</p>
+
+<h2>Editar Orden #{{ orden.numero }}</h2>
+
+<form method="POST" action="{{ url_for ('editar_orden', orden_id=orden.id) }}">
+    <p>
+        {{ form.cliente.label }}<br>
+        {{ form.cliente() }}
+    </p>
+
+    <p>
+        {{ form.persona.label }}<br>
+        {{ form.persona() }}
+    </p>
+
+    <p>
+        {{ form.descripcion.label }}<br>
+        {{ form.descripcion(rows=4) }}
+    </p>
+
+    <p>
+        {{ form.submit(value='Guardar cambios') }}
+    </p>
+</form>
+
+</body>
+</html>

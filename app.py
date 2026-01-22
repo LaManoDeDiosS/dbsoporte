@@ -75,7 +75,7 @@ def cargar_formulario_orden():
 @app.route('/')
 @login_required
 def index():
-    return redirect(url_for('ordenes'))
+    return redirect(url_for('ordenes.ordenes'))
 
 # ------------ DETALLE DE ORDEN ------------
 
@@ -102,7 +102,7 @@ def buscar():
 
     if not numero:
         flash('Debes escribir un número de orden')
-        return redirect(url_for('ordenes'))
+        return redirect(url_for('ordenes.ordenes'))
 
     ordenes = Orden.query.filter_by(numero=numero).all()
 
@@ -122,6 +122,38 @@ def descargar_pdf_orden(orden_id):
     generar_pdf_orden(orden, ruta_pdf)
 
     return send_file(ruta_pdf, as_attachment=True)
+
+# ------------ EDITAR ORDENES------------
+@app.route('/orden/<int:orden_id>/editar', methods=['GET', 'POST'])
+@login_required
+def editar_orden(orden_id):
+
+    if current_user.rol != 'admin':
+        flash('No tienes permisos para editar órdenes')
+        return redirect(url_for('ver_orden', orden_id=orden_id))
+
+    orden = Orden.query.get_or_404(orden_id)
+    form = OrdenForm()
+
+    # Cargar clientes
+    clientes = Cliente.query.order_by(Cliente.nombre).all()
+    form.cliente.choices = [(c.id, c.nombre) for c in clientes]
+
+    if request.method == 'GET':
+        form.cliente.data = orden.cliente_id
+        form.persona.data = orden.persona_reporta
+        form.descripcion.data = orden.descripcion
+
+    if form.validate_on_submit():
+        orden.cliente_id = form.cliente.data
+        orden.persona_reporta = form.persona.data
+        orden.descripcion = form.descripcion.data
+
+        db.session.commit()
+        flash('Orden actualizada correctamente')
+        return redirect(url_for('ver_orden', orden_id=orden.id))
+
+    return render_template('orden_editar.html', form=form, orden=orden)
 
 
 # ---------------------------------
