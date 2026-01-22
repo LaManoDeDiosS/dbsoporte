@@ -8,25 +8,43 @@
 
 <h2>Órdenes de Servicio</h2>
 
+<p>
+    Usuario: <strong>{{ current_user.email }}</strong>
+    | Rol: <strong>{{ current_user.rol }}</strong>
+    | <a href="{{ url_for('auth.login') }}">Cerrar sesión</a>
+</p>
+
+<hr>
+
 {% if current_user.rol == 'admin' %}
 <h3>Registrar nueva orden</h3>
 
 <form method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
 
-    {{ form.cliente.label }}<br>
-    {{ form.cliente() }}<br><br>
+    <p>
+        {{ form.cliente.label }}<br>
+        {{ form.cliente() }}
+    </p>
 
-    {{ form.persona.label }}<br>
-    {{ form.persona() }}<br><br>
+    <p>
+        {{ form.persona.label }}<br>
+        {{ form.persona() }}
+    </p>
 
-    {{ form.descripcion.label }}<br>
-    {{ form.descripcion(rows=4) }}<br><br>
+    <p>
+        {{ form.descripcion.label }}<br>
+        {{ form.descripcion(rows=4) }}
+    </p>
 
-    {{ form.archivos.label }}<br>
-    {{ form.archivos(multiple=True) }}<br><br>
+    <p>
+        {{ form.archivos.label }}<br>
+        {{ form.archivos(multiple=True) }}
+    </p>
 
-    {{ form.submit() }}
+    <p>
+        {{ form.submit() }}
+    </p>
 </form>
 
 <hr>
@@ -34,73 +52,64 @@
 
 <h3>Listado de órdenes</h3>
 
-<table border="1" cellpadding="6">
-<tr>
-    <th>Número</th>
-    <th>Cliente</th>
-    <th>Persona</th>
-    <th>Observación</th>
-    <th>Fecha</th>
-    <th>Archivos</th>
-    <th>Descarga</th>
+<table border="1" cellpadding="6" cellspacing="0">
+    <tr>
+        <th>Número</th>
+        <th>Cliente</th>
+        <th>Persona que reporta</th>
+        <th>Observación</th>
+        <th>Creado por</th>
+        <th>Fecha</th>
+        <th>Archivos</th>
+    </tr>
 
-</tr>
+    {% for o in ordenes %}
+    <tr>
+        <td>{{ o.numero }}</td>
+        <td>{{ o.cliente.nombre }}</td>
+        <td>{{ o.persona_reporta }}</td>
+        <td>{{ o.descripcion }}</td>
 
-{% for o in ordenes %}
-<tr>
-    <td>
-    <a href="{{ url_for('detalle_orden', orden_id=o.id) }}">
-        {{ o.numero }}
-    </a>
-</td>
+        <td>
+            {% if o.usuario %}
+                {{ o.usuario.email }}
+            {% else %}
+                Desconocido
+            {% endif %}
+        </td>
 
-    <td>{{ o.cliente.nombre }}</td>
+        <td>
+            {% if o.fecha %}
+                {{ o.fecha.strftime('%Y-%m-%d %H:%M') }}
+            {% else %}
+                Sin fecha
+            {% endif %}
+        </td>
 
-    <td>{{ o.persona_reporta }}</td>
+        <td>
+            {% if o.adjuntos %}
+                <ul>
+                {% for a in o.adjuntos %}
+                    <li>
+                        <a href="{{ url_for('static', filename='uploads/' ~ a.archivo) }}" target="_blank">
+                            {{ a.archivo }}
+                        </a>
 
-    <td>{{ o.descripcion }}</td>
-
-    <td>
-        {% if o.fecha %}
-            {{ o.fecha.strftime('%Y-%m-%d %H:%M') }}
-        {% else %}
-            Sin fecha
-        {% endif %}
-    </td>
-
- <td>
-    {% if o.adjuntos %}
-        <ul style="margin:0; padding-left:15px;">
-            {% for a in o.adjuntos %}
-                <li>
-                    <a href="{{ url_for('adjuntos.descargar_adjunto', adjunto_id=a.id) }}">
-                        {{ a.archivo }}
-                        <small style="color:gray;">
-    ({{ a.usuario.email if a.usuario else 'usuario desconocido' }})
-</small>
-                    </a>
-
-                    {% if current_user.rol == 'admin' %}
-                        | <a href="{{ url_for('adjuntos.eliminar_adjunto', adjunto_id=a.id) }}"
-                             onclick="return confirm('¿Eliminar archivo?')">
-                            Eliminar
-                          </a>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        Sin archivos
-    {% endif %}
-</td>
-
-<td>
-    <a href="{{ url_for('descargar_pdf_orden', orden_id=o.id) }}">
-        Descargar PDF
-    </a>
-</td>
-</tr>
-{% endfor %}
+                        {% if current_user.rol == 'admin' %}
+                            | <a href="{{ url_for('adjuntos.eliminar_adjunto', adjunto_id=a.id) }}"
+                                 onclick="return confirm('¿Eliminar archivo?')">
+                                 Eliminar
+                              </a>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                Sin archivos
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
 </table>
 
 </body>
