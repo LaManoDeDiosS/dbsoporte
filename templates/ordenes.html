@@ -65,22 +65,26 @@
 
     {% for o in ordenes %}
     <tr>
-        <td>{{ o.numero }}</td>
+
+        <td>
+            <a href="{{ url_for('detalle_orden', orden_id=o.id) }}">{{ o.numero }}
+            </a>
+        </td>
         <td>{{ o.cliente.nombre }}</td>
         <td>{{ o.persona_reporta }}</td>
         <td>{{ o.descripcion }}</td>
 
         <td>
-            {% if o.usuario %}
-                {{ o.usuario.email }}
+            {% if o.usuario_creador %}
+                {{ o.usuario_creador.email }}
             {% else %}
                 Desconocido
             {% endif %}
         </td>
 
         <td>
-            {% if o.fecha %}
-                {{ o.fecha.strftime('%Y-%m-%d %H:%M') }}
+            {% if o.fecha_creacion %}
+                {{ o.fecha_creacion.strftime('%Y-%m-%d %H:%M') }}
             {% else %}
                 Sin fecha
             {% endif %}

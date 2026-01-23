@@ -6,20 +6,38 @@
 </head>
 <body>
 
-<h2>Detalle de Orden de Servicio</h2>
-
-<p><strong>Número:</strong> {{ orden.numero }}</p>
-<p><strong>Cliente:</strong> {{ orden.cliente.nombre }}</p>
-<p><strong>Persona que reporta:</strong> {{ orden.persona_reporta }}</p>
-<p><strong>Observaciones:</strong><br>{{ orden.descripcion }}</p>
-
-<p><strong>Fecha:</strong>
-{% if orden.fecha %}
-    {{ orden.fecha.strftime('%Y-%m-%d %H:%M') }}
-{% else %}
-    Sin fecha
-{% endif %}
+<p>
+    Usuario: {{ current_user.email }} |
+    Rol: {{ current_user.rol }} |
+    <a href="{{ url_for('ordenes.ordenes') }}">⬅ Volver</a>
 </p>
+
+<hr>
+
+<h2>Orden de Servicio #{{ orden.numero }}</h2>
+
+{% if current_user.rol == 'admin' %}
+<p>
+    <a href="{{ url_for('editar_orden', orden_id=orden.id) }}">
+        ✏️ Editar orden
+    </a>
+</p>
+{% endif %}
+
+
+<ul>
+    <li><strong>Cliente:</strong> {{ orden.cliente.nombre }}</li>
+    <li><strong>Persona que reporta:</strong> {{ orden.persona_reporta }}</li>
+    <li><strong>Observaciones:</strong> {{ orden.descripcion }}</li>
+    <li><strong>Creado por:</strong> {{ orden.usuario_creador.email }}</li>
+    <li><strong>Fecha:</strong>
+        {% if orden.fecha_creacion %}
+            {{ orden.fecha_creacion.strftime('%Y-%m-%d %H:%M') }}
+        {% else %}
+            Sin fecha
+        {% endif %}
+    </li>
+</ul>
 
 <hr>
 
@@ -27,35 +45,40 @@
 
 {% if orden.adjuntos %}
 <ul>
-{% for a in orden.adjuntos %}
-    <li>
-        <a href="{{ url_for('static', filename='uploads/' ~ a.archivo) }}" target="_blank">
-            {{ a.archivo }}
-        </a>
+    {% for a in orden.adjuntos %}
+        <li>
+            <a href="{{ url_for('static', filename='uploads/' ~ a.archivo) }}" target="_blank">
+                {{ a.archivo }}
+            </a>
 
-        {% if current_user.rol == 'admin' %}
-            | <a href="{{ url_for('eliminar_adjunto', adjunto_id=a.id) }}"
-                 onclick="return confirm('¿Eliminar archivo?')">Eliminar</a>
-        {% endif %}
-    </li>
-{% endfor %}
+            {% if current_user.rol == 'admin' %}
+                | <a href="{{ url_for('adjuntos.eliminar_adjunto', adjunto_id=a.id) }}"
+                     onclick="return confirm('¿Eliminar archivo?')">Eliminar</a>
+            {% endif %}
+        <hr>
+<h4>Auditoría</h4>
+
+<p>
+    Creada el:
+    {% if orden.fecha_creacion %}
+    {{ orden.fecha_creacion.strftime('%Y-%m-%d %H:%M') }}
+        {% else %}
+        Sin fecha
+    {% endif %}
+</p>
+
+{% if orden.fecha_actualizacion %}
+<p>
+    Última edición:
+    {{ orden.fecha_actualizacion.strftime('%Y-%m-%d %H:%M') }}
+</p>
+{% endif %}
+        </li>
+    {% endfor %}
 </ul>
 {% else %}
-<p>Esta orden no tiene archivos adjuntos.</p>
+<p>Sin archivos adjuntos</p>
 {% endif %}
-
-<hr>
-<br><br>
-
-<a href="{{ url_for('imprimir_orden', orden_id=orden.id) }}" target="_blank">
-    🖨 Imprimir Orden
-<br><br>
-<a href="{{ url_for('descargar_pdf_orden', orden_id=orden.id) }}">
-    📄 Descargar PDF
-</a>
-
-</a>
-<a href="{{ url_for('ordenes') }}">⬅ Volver al listado</a>
 
 </body>
 </html>

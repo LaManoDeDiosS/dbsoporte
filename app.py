@@ -148,8 +148,11 @@ def editar_orden(orden_id):
         orden.cliente_id = form.cliente.data
         orden.persona_reporta = form.persona.data
         orden.descripcion = form.descripcion.data
+        orden.fecha_actualizacion = datetime.utcnow()
+        orden.usuario_edita_id = current_user.id
 
         db.session.commit()
+
         flash('Orden actualizada correctamente')
         return redirect(url_for('ver_orden', orden_id=orden.id))
 

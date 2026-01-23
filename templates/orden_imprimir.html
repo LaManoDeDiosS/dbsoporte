@@ -48,8 +48,8 @@
 
 <div class="campo">
     <span class="label">Fecha:</span>
-    {% if orden.fecha %}
-        {{ orden.fecha.strftime('%Y-%m-%d %H:%M') }}
+    {% if orden.fecha_creacion %}
+        {{ orden.fecha_creacion.strftime('%Y-%m-%d %H:%M') }}
     {% else %}
         Sin fecha
     {% endif %}
