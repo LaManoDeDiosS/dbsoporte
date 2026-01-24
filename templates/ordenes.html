@@ -43,7 +43,7 @@
     </p>
 
     <p>
-        {{ form.submit() }}
+        {{ form.submit(value='Guardar orden') }}
     </p>
 </form>
 
@@ -52,6 +52,13 @@
 
 <h3>Listado de órdenes</h3>
 
+<h3>Buscar orden</h3>
+
+<form method="GET" action="{{ url_for('buscar') }}">
+    <input type="number" name="numero" placeholder="Número de orden" required>
+    <button type="submit">Buscar</button>
+</form>
+
 <table border="1" cellpadding="6" cellspacing="0">
     <tr>
         <th>Número</th>
@@ -59,17 +66,21 @@
         <th>Persona que reporta</th>
         <th>Observación</th>
         <th>Creado por</th>
-        <th>Fecha</th>
+        <th>Fecha creación</th>
+        <th>Última edición</th>
         <th>Archivos</th>
+        <th>Última edición por</th>
+
     </tr>
-
     {% for o in ordenes %}
-    <tr>
 
+    <tr>
         <td>
-            <a href="{{ url_for('detalle_orden', orden_id=o.id) }}">{{ o.numero }}
+            <a href="{{ url_for('detalle_orden', orden_id=o.id) }}">
+                {{ o.numero }}
             </a>
         </td>
+
         <td>{{ o.cliente.nombre }}</td>
         <td>{{ o.persona_reporta }}</td>
         <td>{{ o.descripcion }}</td>
@@ -86,14 +97,22 @@
             {% if o.fecha_creacion %}
                 {{ o.fecha_creacion.strftime('%Y-%m-%d %H:%M') }}
             {% else %}
-                Sin fecha
+                —
+            {% endif %}
+        </td>
+
+        <td>
+            {% if o.fecha_actualizacion %}
+                {{ o.fecha_actualizacion.strftime('%Y-%m-%d %H:%M') }}
+            {% else %}
+                —
             {% endif %}
         </td>
 
         <td>
             {% if o.adjuntos %}
                 <ul>
-                {% for a in o.adjuntos %}
+                    {% for a in o.adjuntos %}
                     <li>
                         <a href="{{ url_for('static', filename='uploads/' ~ a.archivo) }}" target="_blank">
                             {{ a.archivo }}
@@ -106,12 +125,19 @@
                               </a>
                         {% endif %}
                     </li>
-                {% endfor %}
+                    {% endfor %}
                 </ul>
             {% else %}
                 Sin archivos
             {% endif %}
         </td>
+        <td>
+        {% if o.ultimo_editor %}
+            {{ o.ultimo_editor.email }}
+        {% else %}
+            —
+        {% endif %}
+    </td>
     </tr>
     {% endfor %}
 </table>

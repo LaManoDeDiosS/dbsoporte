@@ -1,61 +1,208 @@
-# -------- Flask --------
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+# =========================================================
+# IMPORTS FLASK
+# =========================================================
+from flask import (
+    Blueprint,
+    render_template,
+    redirect,
+    url_for,
+    flash,
+    request,
+    current_app,
+    send_file
+)
 from flask_login import login_required, current_user
 
-# -------- Proyecto --------
-from extensions import db
-from models import Orden, Cliente, Adjunto
-from forms import OrdenForm
 
-# -------- Otros --------
+# =========================================================
+# IMPORTS DEL PROYECTO
+# =========================================================
+from extensions import db
+from models import Orden, Cliente, Adjunto, HistorialOrden
+from forms import OrdenForm
+from utils.pdf_orden import generar_pdf_orden
+
+
+# =========================================================
+# OTROS IMPORTS
+# =========================================================
 from sqlalchemy import func
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
-from flask import current_app
 
+
+# =========================================================
+# BLUEPRINT
+# =========================================================
 ordenes_bp = Blueprint('ordenes', __name__)
 
+
+# =========================================================
+# LISTADO + CREACIÓN DE ÓRDENES
+# =========================================================
 @ordenes_bp.route('/ordenes', methods=['GET', 'POST'])
 @login_required
 def ordenes():
+    """
+    - Lista todas las órdenes
+    - Permite crear una nueva orden (solo admin)
+    """
+
     form = OrdenForm()
 
-    # Cargar clientes
+    # -------------------------
+    # Cargar clientes para el select
+    # -------------------------
     clientes = Cliente.query.order_by(Cliente.nombre).all()
     form.cliente.choices = [(c.id, c.nombre) for c in clientes]
 
-    lista_ordenes = Orden.query.order_by(Orden.id.desc()).all()
+    # -------------------------
+    # Listado de órdenes
+    # -------------------------
+    ordenes = Orden.query.order_by(Orden.id.desc()).all()
 
-    # Solo admin puede crear órdenes
+    # -------------------------
+    # Crear orden (solo admin)
+    # -------------------------
     if current_user.rol == 'admin' and form.validate_on_submit():
 
-        ultimo = db.session.query(func.max(Orden.numero)).scalar()
-        nuevo_numero = 1 if ultimo is None else ultimo + 1
+        # Número consecutivo
+        ultimo_numero = db.session.query(func.max(Orden.numero)).scalar()
+        nuevo_numero = 1 if ultimo_numero is None else ultimo_numero + 1
 
         orden = Orden(
             numero=nuevo_numero,
             cliente_id=form.cliente.data,
             persona_reporta=form.persona.data,
             descripcion=form.descripcion.data,
-            usuario_id=current_user.id,
-            fecha=datetime.now()
+            usuario_id=current_user.id
         )
 
         db.session.add(orden)
+        db.session.commit()  # Necesario para obtener orden.id
+
+        # -------------------------
+        # Guardar archivos adjuntos
+        # -------------------------
+        for archivo in form.archivos.data or []:
+            if archivo and archivo.filename:
+                nombre_seguro = secure_filename(archivo.filename)
+                ruta = os.path.join(
+                    current_app.config['UPLOAD_FOLDER'],
+                    nombre_seguro
+                )
+
+                archivo.save(ruta)
+
+                adjunto = Adjunto(
+                    archivo=nombre_seguro,
+                    orden_id=orden.id
+                )
+                db.session.add(adjunto)
+
         db.session.commit()
 
-        for file in form.archivos.data:
-            if file and file.filename:
-                nombre = secure_filename(file.filename)
-                ruta = os.path.join(current_app.config['UPLOAD_FOLDER'], nombre)
-                file.save(ruta)
-
-                adj = Adjunto(archivo=nombre, orden_id=orden.id)
-                db.session.add(adj)
-
-        db.session.commit()
-        flash(f'Orden #{nuevo_numero} creada correctamente')
+        flash(f'Orden #{nuevo_numero} creada correctamente', 'success')
         return redirect(url_for('ordenes.ordenes'))
 
-    return render_template('ordenes.html', form=form, ordenes=lista_ordenes)
+    if form.errors:
+        print('ERRORES FORM:', form.errors)
+
+    return render_template(
+        'ordenes.html',
+        form=form,
+        ordenes=ordenes
+    )
+
+
+# =========================================================
+# EDITAR ORDEN + HISTORIAL
+# =========================================================
+@ordenes_bp.route('/orden/<int:orden_id>/editar', methods=['GET', 'POST'])
+@login_required
+def editar_orden(orden_id):
+    """
+    Edita una orden y registra historial de cambios
+    """
+
+    orden = Orden.query.get_or_404(orden_id)
+    form = OrdenForm(obj=orden)
+
+    clientes = Cliente.query.order_by(Cliente.nombre).all()
+    form.cliente.choices = [(c.id, c.nombre) for c in clientes]
+
+    # Valores antes del cambio
+    valores_anteriores = {
+        'cliente_id': orden.cliente_id,
+        'persona_reporta': orden.persona_reporta,
+        'descripcion': orden.descripcion
+    }
+
+    if form.validate_on_submit():
+
+        # Actualizar orden
+        orden.cliente_id = form.cliente.data
+        orden.persona_reporta = form.persona.data
+        orden.descripcion = form.descripcion.data
+        orden.ultimo_editor_id = current_user.id
+        orden.fecha_actualizacion = datetime.utcnow()
+
+        # Registrar historial
+        for campo, valor_anterior in valores_anteriores.items():
+            valor_nuevo = getattr(orden, campo)
+
+            if str(valor_anterior) != str(valor_nuevo):
+                historial = HistorialOrden(
+                    orden_id=orden.id,
+                    usuario_id=current_user.id,
+                    campo=campo,
+                    valor_anterior=str(valor_anterior),
+                    valor_nuevo=str(valor_nuevo)
+                )
+                db.session.add(historial)
+
+        db.session.commit()
+
+        flash('Orden actualizada correctamente', 'success')
+        return redirect(url_for('ordenes.ordenes'))
+
+    return render_template(
+        'orden_editar.html',
+        form=form,
+        orden=orden
+    )
+
+
+# =========================================================
+# DESCARGAR PDF DE LA ORDEN
+# =========================================================
+@ordenes_bp.route('/orden/<int:orden_id>/pdf')
+@login_required
+def descargar_pdf_orden(orden_id):
+    """
+    Genera y descarga el PDF de una orden
+    """
+
+    orden = Orden.query.get_or_404(orden_id)
+
+    ruta_pdf = os.path.join(
+        current_app.root_path,
+        'static',
+        'pdf',
+        f'orden_{orden.numero}.pdf'
+    )
+
+    # Crear carpeta si no existe
+    os.makedirs(os.path.dirname(ruta_pdf), exist_ok=True)
+
+    # Generar PDF
+    generar_pdf_orden(orden, ruta_pdf)
+
+    # Enviar al navegador
+    return send_file(
+        ruta_pdf,
+        as_attachment=True,
+        download_name=f'orden_{orden.numero}.pdf'
+    )
+

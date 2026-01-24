@@ -3,6 +3,7 @@ from flask_login import UserMixin
 from datetime import datetime
 
 
+
 class Usuario(db.Model, UserMixin):
     __tablename__ = 'usuarios'
     id = db.Column(db.Integer, primary_key=True)
@@ -26,6 +27,8 @@ class Orden(db.Model):
     descripcion = db.Column(db.Text, nullable=False)
     fecha = db.Column(db.DateTime)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
+    ultimo_editor_id = db.Column(db.Integer,db.ForeignKey('usuarios.id'),nullable=True)
+    ultimo_editor = db.relationship('Usuario',foreign_keys=[ultimo_editor_id])
     usuario_edita_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
     cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'))
     usuario_creador = db.relationship('Usuario',foreign_keys=[usuario_id],back_populates='ordenes_creadas')
@@ -33,7 +36,22 @@ class Orden(db.Model):
     cliente = db.relationship('Cliente', back_populates='ordenes')
     adjuntos = db.relationship('Adjunto',back_populates='orden',cascade='all, delete-orphan')
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
-    fecha_actualizacion = db.Column(db.DateTime)
+    fecha_actualizacion = db.Column(db.DateTime, onupdate=datetime.utcnow)
+    historial = db.relationship('HistorialOrden',backref='orden',order_by='HistorialOrden.fecha.desc()')
+
+
+class HistorialOrden(db.Model):
+    __tablename__ = 'historial_ordenes'
+    id = db.Column(db.Integer, primary_key=True)
+    orden_id = db.Column(db.Integer, db.ForeignKey('ordenes.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+
+    campo = db.Column(db.String(50), nullable=False)
+    valor_anterior = db.Column(db.Text)
+    valor_nuevo = db.Column(db.Text)
+
+    fecha = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    usuario = db.relationship('Usuario')
 
 
 

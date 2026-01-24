@@ -7,12 +7,14 @@
 <body>
 
 <p>
-    <a href="{{ url_for('editar_orden', orden_id=orden.id) }}">⬅ Volver</a>
+    <a href="{{ url_for('ordenes.ordenes') }}">⬅ Volver</a>
 </p>
 
 <h2>Editar Orden #{{ orden.numero }}</h2>
 
-<form method="POST" action="{{ url_for ('editar_orden', orden_id=orden.id) }}">
+<form method="POST" action="{{ url_for('ordenes.editar_orden', orden_id=orden.id) }}">
+    {{ form.hidden_tag() }}
+
     <p>
         {{ form.cliente.label }}<br>
         {{ form.cliente() }}

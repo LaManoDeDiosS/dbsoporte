@@ -16,6 +16,7 @@ from extensions import db, migrate
 from models import Usuario, Cliente, Orden, Adjunto
 from forms import LoginForm, ClienteForm, OrdenForm
 from datetime import datetime
+from flask_migrate import Migrate
 
 
 from utils.pdf_orden import generar_pdf_orden

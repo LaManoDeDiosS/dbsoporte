@@ -6,14 +6,47 @@
 </head>
 <body>
 
+<!-- ================================================= -->
+<!-- USUARIO / NAVEGACIÓN -->
+<!-- ================================================= -->
 <p>
-    Usuario: {{ current_user.email }} |
-    Rol: {{ current_user.rol }} |
-    <a href="{{ url_for('ordenes.ordenes') }}">⬅ Volver</a>
+    Usuario: <strong>{{ current_user.email }}</strong> |
+    Rol: <strong>{{ current_user.rol }}</strong> |
+    <a href="{{ url_for('ordenes.ordenes') }}">⬅ Volver</a> |
+    <!-- BOTÓN PDF -->
+    <a href="{{ url_for('ordenes.descargar_pdf_orden', orden_id=orden.id) }}">
+        📄 Descargar PDF
+    </a>
 </p>
 
 <hr>
 
+<!-- ================================================= -->
+<!-- HISTORIAL DE CAMBIOS -->
+<!-- ================================================= -->
+<h3>Historial de cambios</h3>
+
+{% if orden.historial %}
+    <ul>
+    {% for h in orden.historial %}
+        <li>
+            {{ h.fecha.strftime('%Y-%m-%d %H:%M') }} —
+            <strong>{{ h.usuario.email }}</strong>
+            cambió <em>{{ h.campo }}</em><br>
+            Antes: {{ h.valor_anterior }}<br>
+            Después: {{ h.valor_nuevo }}
+        </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>Sin cambios registrados.</p>
+{% endif %}
+
+<hr>
+
+<!-- ================================================= -->
+<!-- DATOS PRINCIPALES DE LA ORDEN -->
+<!-- ================================================= -->
 <h2>Orden de Servicio #{{ orden.numero }}</h2>
 
 {% if current_user.rol == 'admin' %}
@@ -24,13 +57,13 @@
 </p>
 {% endif %}
 
-
 <ul>
     <li><strong>Cliente:</strong> {{ orden.cliente.nombre }}</li>
     <li><strong>Persona que reporta:</strong> {{ orden.persona_reporta }}</li>
     <li><strong>Observaciones:</strong> {{ orden.descripcion }}</li>
     <li><strong>Creado por:</strong> {{ orden.usuario_creador.email }}</li>
-    <li><strong>Fecha:</strong>
+    <li>
+        <strong>Fecha de creación:</strong>
         {% if orden.fecha_creacion %}
             {{ orden.fecha_creacion.strftime('%Y-%m-%d %H:%M') }}
         {% else %}
@@ -41,6 +74,9 @@
 
 <hr>
 
+<!-- ================================================= -->
+<!-- ARCHIVOS ADJUNTOS -->
+<!-- ================================================= -->
 <h3>Archivos adjuntos</h3>
 
 {% if orden.adjuntos %}
@@ -55,14 +91,25 @@
                 | <a href="{{ url_for('adjuntos.eliminar_adjunto', adjunto_id=a.id) }}"
                      onclick="return confirm('¿Eliminar archivo?')">Eliminar</a>
             {% endif %}
-        <hr>
+        </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>Sin archivos adjuntos</p>
+{% endif %}
+
+<hr>
+
+<!-- ================================================= -->
+<!-- AUDITORÍA -->
+<!-- ================================================= -->
 <h4>Auditoría</h4>
 
 <p>
     Creada el:
     {% if orden.fecha_creacion %}
-    {{ orden.fecha_creacion.strftime('%Y-%m-%d %H:%M') }}
-        {% else %}
+        {{ orden.fecha_creacion.strftime('%Y-%m-%d %H:%M') }}
+    {% else %}
         Sin fecha
     {% endif %}
 </p>
@@ -73,12 +120,7 @@
     {{ orden.fecha_actualizacion.strftime('%Y-%m-%d %H:%M') }}
 </p>
 {% endif %}
-        </li>
-    {% endfor %}
-</ul>
-{% else %}
-<p>Sin archivos adjuntos</p>
-{% endif %}
 
 </body>
 </html>
+
