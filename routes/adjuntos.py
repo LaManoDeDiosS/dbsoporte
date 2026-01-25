@@ -8,6 +8,8 @@ from extensions import db
 from models import Adjunto
 from flask import current_app
 
+from utils.permisos import admin_required, roles_required
+
 adjuntos_bp = Blueprint('adjuntos', __name__)
 
 # ---------------- DESCARGAR ----------------
@@ -25,6 +27,7 @@ def descargar_adjunto(adjunto_id):
 # ---------------- ELIMINAR ----------------
 @adjuntos_bp.route('/adjuntos/eliminar/<int:adjunto_id>')
 @login_required
+@roles_required('admin')
 def eliminar_adjunto(adjunto_id):
 
     # 🔒 Solo admin puede eliminar

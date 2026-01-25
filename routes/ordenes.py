@@ -9,7 +9,8 @@ from flask import (
     flash,
     request,
     current_app,
-    send_file
+    send_file,
+    abort
 )
 from flask_login import login_required, current_user
 
@@ -21,6 +22,9 @@ from extensions import db
 from models import Orden, Cliente, Adjunto, HistorialOrden
 from forms import OrdenForm
 from utils.pdf_orden import generar_pdf_orden
+from utils.permisos import admin_required
+from utils.permisos import roles_required
+
 
 
 # =========================================================
@@ -62,9 +66,19 @@ def ordenes():
     # -------------------------
     ordenes = Orden.query.order_by(Orden.id.desc()).all()
 
+    # 🔐 PROTECCIÓN POST
+    if request.method == 'POST' and current_user.rol != 'admin':
+        abort(403)
+
+    # ✅ SOLO ADMIN LLEGA AQUÍ
+    if form.validate_on_submit():
+        ...
     # -------------------------
     # Crear orden (solo admin)
     # -------------------------
+    if request.method == 'POST' and current_user.rol != 'admin':
+        abort(403)
+
     if current_user.rol == 'admin' and form.validate_on_submit():
 
         # Número consecutivo
@@ -121,6 +135,7 @@ def ordenes():
 # =========================================================
 @ordenes_bp.route('/orden/<int:orden_id>/editar', methods=['GET', 'POST'])
 @login_required
+@roles_required('admin','tecnico')
 def editar_orden(orden_id):
     """
     Edita una orden y registra historial de cambios
@@ -172,6 +187,27 @@ def editar_orden(orden_id):
         form=form,
         orden=orden
     )
+
+# =========================================================
+# ELIMINAR ORDEN (SOLO ADMIN)
+# =========================================================
+@ordenes_bp.route('/orden/<int:orden_id>/eliminar', methods=['POST'])
+@login_required
+@roles_required('admin')
+def eliminar_orden(orden_id):
+    """
+    Elimina una orden del sistema
+    Solo permitido para admin
+    """
+
+    orden = Orden.query.get_or_404(orden_id)
+
+    db.session.delete(orden)
+    db.session.commit()
+
+    flash(f'Orden #{orden.numero} eliminada correctamente', 'success')
+    return redirect(url_for('ordenes.ordenes'))
+
 
 
 # =========================================================

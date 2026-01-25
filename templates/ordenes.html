@@ -10,8 +10,10 @@
 
 <p>
     Usuario: <strong>{{ current_user.email }}</strong>
-    | Rol: <strong>{{ current_user.rol }}</strong>
-    | <a href="{{ url_for('auth.login') }}">Cerrar sesión</a>
+    |
+    Rol: <strong>{{ current_user.rol }}</strong>
+    |
+    <a href="{{ url_for('auth.login') }}">Cerrar sesión</a>
 </p>
 
 <hr>
@@ -22,35 +24,16 @@
 <form method="POST" enctype="multipart/form-data">
     {{ form.hidden_tag() }}
 
-    <p>
-        {{ form.cliente.label }}<br>
-        {{ form.cliente() }}
-    </p>
+    <p>{{ form.cliente.label }}<br>{{ form.cliente() }}</p>
+    <p>{{ form.persona.label }}<br>{{ form.persona() }}</p>
+    <p>{{ form.descripcion.label }}<br>{{ form.descripcion(rows=4) }}</p>
+    <p>{{ form.archivos.label }}<br>{{ form.archivos(multiple=True) }}</p>
 
-    <p>
-        {{ form.persona.label }}<br>
-        {{ form.persona() }}
-    </p>
-
-    <p>
-        {{ form.descripcion.label }}<br>
-        {{ form.descripcion(rows=4) }}
-    </p>
-
-    <p>
-        {{ form.archivos.label }}<br>
-        {{ form.archivos(multiple=True) }}
-    </p>
-
-    <p>
-        {{ form.submit(value='Guardar orden') }}
-    </p>
+    <p>{{ form.submit(value='Guardar orden') }}</p>
 </form>
 
 <hr>
 {% endif %}
-
-<h3>Listado de órdenes</h3>
 
 <h3>Buscar orden</h3>
 
@@ -58,6 +41,8 @@
     <input type="number" name="numero" placeholder="Número de orden" required>
     <button type="submit">Buscar</button>
 </form>
+
+<h3>Listado de órdenes</h3>
 
 <table border="1" cellpadding="6" cellspacing="0">
     <tr>
@@ -70,10 +55,10 @@
         <th>Última edición</th>
         <th>Archivos</th>
         <th>Última edición por</th>
-
+        <th>Acciones</th>
     </tr>
-    {% for o in ordenes %}
 
+    {% for o in ordenes %}
     <tr>
         <td>
             <a href="{{ url_for('detalle_orden', orden_id=o.id) }}">
@@ -86,27 +71,15 @@
         <td>{{ o.descripcion }}</td>
 
         <td>
-            {% if o.usuario_creador %}
-                {{ o.usuario_creador.email }}
-            {% else %}
-                Desconocido
-            {% endif %}
+            {{ o.usuario_creador.email if o.usuario_creador else 'Desconocido' }}
         </td>
 
         <td>
-            {% if o.fecha_creacion %}
-                {{ o.fecha_creacion.strftime('%Y-%m-%d %H:%M') }}
-            {% else %}
-                —
-            {% endif %}
+            {{ o.fecha_creacion.strftime('%Y-%m-%d %H:%M') if o.fecha_creacion else '—' }}
         </td>
 
         <td>
-            {% if o.fecha_actualizacion %}
-                {{ o.fecha_actualizacion.strftime('%Y-%m-%d %H:%M') }}
-            {% else %}
-                —
-            {% endif %}
+            {{ o.fecha_actualizacion.strftime('%Y-%m-%d %H:%M') if o.fecha_actualizacion else '—' }}
         </td>
 
         <td>
@@ -121,7 +94,7 @@
                         {% if current_user.rol == 'admin' %}
                             | <a href="{{ url_for('adjuntos.eliminar_adjunto', adjunto_id=a.id) }}"
                                  onclick="return confirm('¿Eliminar archivo?')">
-                                 Eliminar
+                                Eliminar
                               </a>
                         {% endif %}
                     </li>
@@ -131,13 +104,41 @@
                 Sin archivos
             {% endif %}
         </td>
+
         <td>
-        {% if o.ultimo_editor %}
-            {{ o.ultimo_editor.email }}
-        {% else %}
-            —
-        {% endif %}
-    </td>
+            {{ o.ultimo_editor.email if o.ultimo_editor else '—' }}
+        </td>
+
+        <!-- ACCIONES -->
+        <td>
+            <div style="display:flex; gap:6px; align-items:center;">
+
+                {% if current_user.rol in ['admin', 'tecnico'] %}
+                    <a href="{{ url_for('ordenes.editar_orden', orden_id=o.id) }}">
+                        Editar
+                    </a>
+                {% endif %}
+
+                {% if current_user.rol == 'admin' %}
+                    <form action="{{ url_for('ordenes.eliminar_orden', orden_id=o.id) }}"
+                          method="POST"
+                          style="margin:0;">
+
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <button type="submit"
+                                onclick="return confirm('¿Eliminar esta orden?')">
+                            Eliminar
+                        </button>
+                    </form>
+                {% endif %}
+
+                {% if current_user.rol not in ['admin', 'tecnico'] %}
+                    —
+                {% endif %}
+
+            </div>
+        </td>
     </tr>
     {% endfor %}
 </table>
