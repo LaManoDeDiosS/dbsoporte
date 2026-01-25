@@ -13,7 +13,7 @@
     |
     Rol: <strong>{{ current_user.rol }}</strong>
     |
-    <a href="{{ url_for('auth.login') }}">Cerrar sesión</a>
+    <a href="{{ url_for('auth.logout') }}">Cerrar sesión</a>
 </p>
 
 <hr>
@@ -37,7 +37,7 @@
 
 <h3>Buscar orden</h3>
 
-<form method="GET" action="{{ url_for('buscar') }}">
+<form method="GET" action="{{ url_for('ordenes.ordenes') }}">
     <input type="number" name="numero" placeholder="Número de orden" required>
     <button type="submit">Buscar</button>
 </form>
