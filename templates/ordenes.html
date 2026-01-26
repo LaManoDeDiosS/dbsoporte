@@ -1,19 +1,12 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Órdenes de Servicio</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Órdenes de Servicio{% endblock %}
+{% block content %}
 
 <h2>Órdenes de Servicio</h2>
 
 <p>
-    Usuario: <strong>{{ current_user.email }}</strong>
-    |
+    Usuario: <strong>{{ current_user.email }}</strong> |
     Rol: <strong>{{ current_user.rol }}</strong>
-    |
-    <a href="{{ url_for('auth.logout') }}">Cerrar sesión</a>
 </p>
 
 <hr>
@@ -37,111 +30,145 @@
 
 <h3>Buscar orden</h3>
 
-<form method="GET" action="{{ url_for('ordenes.ordenes') }}">
-    <input type="number" name="numero" placeholder="Número de orden" required>
-    <button type="submit">Buscar</button>
+<form method="GET" action="{{ url_for('ordenes.ordenes') }}" class="row g-2 mb-3">
+
+    <div class="col-md-3">
+        <input type="number"
+               name="numero"
+               class="form-control"
+               placeholder="Número de orden"
+               value="{{ numero_busqueda or '' }}">
+    </div>
+
+    <div class="col-md-4">
+        <input type="text"
+               name="texto"
+               class="form-control"
+               placeholder="Persona o descripción"
+               value="{{ texto_busqueda or '' }}">
+    </div>
+
+    <div class="col-md-3">
+        <select name="cliente_id" class="form-select">
+            <option value="">Todos los clientes</option>
+            {% for c in clientes %}
+                <option value="{{ c.id }}"
+                    {% if cliente_busqueda and cliente_busqueda == c.id|string %}
+                        selected
+                    {% endif %}>
+                    {{ c.nombre }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-primary">
+            Buscar
+        </button>
+    </div>
+
 </form>
+
 
 <h3>Listado de órdenes</h3>
 
-<table border="1" cellpadding="6" cellspacing="0">
-    <tr>
-        <th>Número</th>
-        <th>Cliente</th>
-        <th>Persona que reporta</th>
-        <th>Observación</th>
-        <th>Creado por</th>
-        <th>Fecha creación</th>
-        <th>Última edición</th>
-        <th>Archivos</th>
-        <th>Última edición por</th>
-        <th>Acciones</th>
-    </tr>
+<div class="table-responsive">
+<table class="table table-striped table-hover align-middle">
 
+    <thead class="table-dark">
+        <tr>
+            <th>#</th>
+            <th>Cliente</th>
+            <th>Reporta</th>
+            <th>Observación</th>
+            <th>Creado por</th>
+            <th>Creación</th>
+            <th>Edición</th>
+            <th>Archivos</th>
+            <th>Editor</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+
+    <tbody>
     {% for o in ordenes %}
-    <tr>
-        <td>
-            <a href="{{ url_for('detalle_orden', orden_id=o.id) }}">
-                {{ o.numero }}
-            </a>
-        </td>
+        <tr>
 
-        <td>{{ o.cliente.nombre }}</td>
-        <td>{{ o.persona_reporta }}</td>
-        <td>{{ o.descripcion }}</td>
+            <td>
+                <a href="{{ url_for('detalle_orden', orden_id=o.id) }}">
+                    {{ o.numero }}
+                </a>
+            </td>
 
-        <td>
-            {{ o.usuario_creador.email if o.usuario_creador else 'Desconocido' }}
-        </td>
+            <td>{{ o.cliente.nombre }}</td>
+            <td>{{ o.persona_reporta }}</td>
+            <td>{{ o.descripcion }}</td>
 
-        <td>
-            {{ o.fecha_creacion.strftime('%Y-%m-%d %H:%M') if o.fecha_creacion else '—' }}
-        </td>
+            <td>
+                {{ o.usuario_creador.email if o.usuario_creador else 'Desconocido' }}
+            </td>
 
-        <td>
-            {{ o.fecha_actualizacion.strftime('%Y-%m-%d %H:%M') if o.fecha_actualizacion else '—' }}
-        </td>
+            <td>
+                {{ o.fecha_creacion.strftime('%Y-%m-%d %H:%M') if o.fecha_creacion else '—' }}
+            </td>
 
-        <td>
-            {% if o.adjuntos %}
-                <ul>
+            <td>
+                {{ o.fecha_actualizacion.strftime('%Y-%m-%d %H:%M') if o.fecha_actualizacion else '—' }}
+            </td>
+
+            <td>
+                {% if o.adjuntos %}
                     {% for a in o.adjuntos %}
-                    <li>
                         <a href="{{ url_for('static', filename='uploads/' ~ a.archivo) }}" target="_blank">
                             {{ a.archivo }}
-                        </a>
-
-                        {% if current_user.rol == 'admin' %}
-                            | <a href="{{ url_for('adjuntos.eliminar_adjunto', adjunto_id=a.id) }}"
-                                 onclick="return confirm('¿Eliminar archivo?')">
-                                Eliminar
-                              </a>
-                        {% endif %}
-                    </li>
+                        </a><br>
                     {% endfor %}
-                </ul>
-            {% else %}
-                Sin archivos
-            {% endif %}
-        </td>
-
-        <td>
-            {{ o.ultimo_editor.email if o.ultimo_editor else '—' }}
-        </td>
-
-        <!-- ACCIONES -->
-        <td>
-            <div style="display:flex; gap:6px; align-items:center;">
-
-                {% if current_user.rol in ['admin', 'tecnico'] %}
-                    <a href="{{ url_for('ordenes.editar_orden', orden_id=o.id) }}">
-                        Editar
-                    </a>
+                {% else %}
+                    Sin archivos
                 {% endif %}
+            </td>
 
-                {% if current_user.rol == 'admin' %}
-                    <form action="{{ url_for('ordenes.eliminar_orden', orden_id=o.id) }}"
-                          method="POST"
-                          style="margin:0;">
+            <td>
+                {{ o.ultimo_editor.email if o.ultimo_editor else '—' }}
+            </td>
 
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <!-- ACCIONES -->
+            <td>
+                <div class="d-flex flex-wrap gap-2">
 
-                        <button type="submit"
-                                onclick="return confirm('¿Eliminar esta orden?')">
-                            Eliminar
-                        </button>
-                    </form>
-                {% endif %}
+                    {% if current_user.rol in ['admin', 'tecnico'] %}
+                        <a href="{{ url_for('ordenes.editar_orden', orden_id=o.id) }}"
+                           class="btn btn-sm btn-primary">
+                            Editar
+                        </a>
+                    {% endif %}
 
-                {% if current_user.rol not in ['admin', 'tecnico'] %}
-                    —
-                {% endif %}
+                    {% if current_user.rol == 'admin' %}
+                        <form method="POST"
+                              action="{{ url_for('ordenes.eliminar_orden', orden_id=o.id) }}"
+                              style="margin:0;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit"
+                                    class="btn btn-sm btn-danger"
+                                    onclick="return confirm('¿Eliminar esta orden?')">
+                                Eliminar
+                            </button>
+                        </form>
+                    {% endif %}
 
-            </div>
-        </td>
-    </tr>
+                    {% if current_user.rol not in ['admin', 'tecnico'] %}
+                        —
+                    {% endif %}
+
+                </div>
+            </td>
+
+        </tr>
     {% endfor %}
-</table>
+    </tbody>
 
-</body>
-</html>
+</table>
+</div>
+
+{% endblock %}

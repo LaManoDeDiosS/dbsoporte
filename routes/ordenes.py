@@ -49,39 +49,65 @@ ordenes_bp = Blueprint('ordenes', __name__)
 @login_required
 def ordenes():
     """
-    - Lista todas las órdenes
-    - Permite crear una nueva orden (solo admin)
+    - Lista órdenes
+    - Permite búsqueda avanzada
+    - Permite crear orden (solo admin)
     """
 
+    # -------------------------
+    # FORMULARIO
+    # -------------------------
     form = OrdenForm()
 
     # -------------------------
-    # Cargar clientes para el select
+    # CLIENTES (para select y buscador)
     # -------------------------
     clientes = Cliente.query.order_by(Cliente.nombre).all()
     form.cliente.choices = [(c.id, c.nombre) for c in clientes]
 
     # -------------------------
-    # Listado de órdenes
+    # PARÁMETROS DE BÚSQUEDA
     # -------------------------
-    ordenes = Orden.query.order_by(Orden.id.desc()).all()
+    numero_busqueda = request.args.get('numero')
+    texto_busqueda = request.args.get('texto')
+    cliente_busqueda = request.args.get('cliente_id')
 
-    # 🔐 PROTECCIÓN POST
+    if cliente_busqueda:
+        cliente_busqueda = int(cliente_busqueda)
+
+    # -------------------------
+    # CONSULTA BASE
+    # -------------------------
+    query = Orden.query
+
+    if numero_busqueda:
+        query = query.filter(Orden.numero == numero_busqueda)
+
+    if texto_busqueda:
+        query = query.filter(
+            (Orden.persona_reporta.ilike(f'%{texto_busqueda}%')) |
+            (Orden.descripcion.ilike(f'%{texto_busqueda}%'))
+        )
+
+    if cliente_busqueda:
+        query = query.filter(Orden.cliente_id == cliente_busqueda)
+
+    ordenes = query.order_by(Orden.id.desc()).all()
+
+    if (numero_busqueda or texto_busqueda or cliente_busqueda) and not ordenes:
+        flash('No se encontraron órdenes con esos criterios', 'warning')
+
+    # -------------------------
+    # PROTECCIÓN POST
+    # -------------------------
     if request.method == 'POST' and current_user.rol != 'admin':
         abort(403)
 
-    # ✅ SOLO ADMIN LLEGA AQUÍ
-    if form.validate_on_submit():
-        ...
     # -------------------------
-    # Crear orden (solo admin)
+    # CREAR ORDEN (SOLO ADMIN)
     # -------------------------
-    if request.method == 'POST' and current_user.rol != 'admin':
-        abort(403)
-
     if current_user.rol == 'admin' and form.validate_on_submit():
 
-        # Número consecutivo
         ultimo_numero = db.session.query(func.max(Orden.numero)).scalar()
         nuevo_numero = 1 if ultimo_numero is None else ultimo_numero + 1
 
@@ -94,19 +120,12 @@ def ordenes():
         )
 
         db.session.add(orden)
-        db.session.commit()  # Necesario para obtener orden.id
+        db.session.commit()
 
-        # -------------------------
-        # Guardar archivos adjuntos
-        # -------------------------
         for archivo in form.archivos.data or []:
             if archivo and archivo.filename:
                 nombre_seguro = secure_filename(archivo.filename)
-                ruta = os.path.join(
-                    current_app.config['UPLOAD_FOLDER'],
-                    nombre_seguro
-                )
-
+                ruta = os.path.join(current_app.config['UPLOAD_FOLDER'], nombre_seguro)
                 archivo.save(ruta)
 
                 adjunto = Adjunto(
@@ -116,18 +135,22 @@ def ordenes():
                 db.session.add(adjunto)
 
         db.session.commit()
-
         flash(f'Orden #{nuevo_numero} creada correctamente', 'success')
         return redirect(url_for('ordenes.ordenes'))
 
-    if form.errors:
-        print('ERRORES FORM:', form.errors)
-
+    # -------------------------
+    # RENDER
+    # -------------------------
     return render_template(
         'ordenes.html',
         form=form,
-        ordenes=ordenes
+        ordenes=ordenes,
+        clientes=clientes,
+        numero_busqueda=numero_busqueda,
+        texto_busqueda=texto_busqueda,
+        cliente_busqueda=cliente_busqueda
     )
+
 
 
 # =========================================================

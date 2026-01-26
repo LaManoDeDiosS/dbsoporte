@@ -55,6 +55,8 @@ migrate.init_app(app, db)
 # ----------- LOGIN -----------
 login_manager = LoginManager(app)
 login_manager.login_view = 'auth.login'
+login_manager.login_message = "Debes iniciar sesión para acceder al sistema"
+login_manager.login_message_category = "warning"
 
 
 @login_manager.user_loader
