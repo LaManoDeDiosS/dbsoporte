@@ -1,6 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, TextAreaField, SelectField, MultipleFileField, SubmitField, PasswordField
 from wtforms.validators import DataRequired, Email
+from flask_wtf.file import MultipleFileField
 
 
 class LoginForm(FlaskForm):
@@ -18,5 +19,8 @@ class OrdenForm(FlaskForm):
     cliente = SelectField('Cliente', coerce=int, validators=[DataRequired()])
     persona = StringField('Persona que reporta', validators=[DataRequired()])
     descripcion = TextAreaField('Descripción', validators=[DataRequired()])
+    solucion = TextAreaField('Resultado / Solución')
     archivos = MultipleFileField('Adjuntar archivos')
     submit = SubmitField('Guardar Orden')
+
+

@@ -45,7 +45,7 @@ ordenes_bp = Blueprint('ordenes', __name__)
 # =========================================================
 # LISTADO + CREACIÓN DE ÓRDENES
 # =========================================================
-@ordenes_bp.route('/ordenes', methods=['GET', 'POST'])
+@ordenes_bp.route('/', methods=['GET', 'POST'])
 @login_required
 def ordenes():
     """
@@ -156,7 +156,7 @@ def ordenes():
 # =========================================================
 # EDITAR ORDEN + HISTORIAL
 # =========================================================
-@ordenes_bp.route('/orden/<int:orden_id>/editar', methods=['GET', 'POST'])
+@ordenes_bp.route('/<int:orden_id>/editar', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin','tecnico')
 def editar_orden(orden_id):
@@ -167,8 +167,26 @@ def editar_orden(orden_id):
     orden = Orden.query.get_or_404(orden_id)
     form = OrdenForm(obj=orden)
 
+    # ✅ SIEMPRE cargar choices ANTES de validar
     clientes = Cliente.query.order_by(Cliente.nombre).all()
     form.cliente.choices = [(c.id, c.nombre) for c in clientes]
+
+    # Precargar solución en GET
+    if request.method == 'GET':
+        form.solucion.data = orden.solucion
+
+    if form.validate_on_submit():
+        orden.cliente_id = form.cliente.data
+        orden.persona_reporta = form.persona.data
+        orden.descripcion = form.descripcion.data
+        orden.solucion = form.solucion.data
+        orden.ultimo_editor_id = current_user.id
+        orden.fecha_actualizacion = datetime.utcnow()
+
+        db.session.commit()
+
+        flash('Orden actualizada correctamente', 'success')
+        return redirect(url_for('ordenes.ordenes'))
 
     # Valores antes del cambio
     valores_anteriores = {
@@ -183,6 +201,7 @@ def editar_orden(orden_id):
         orden.cliente_id = form.cliente.data
         orden.persona_reporta = form.persona.data
         orden.descripcion = form.descripcion.data
+        orden.solucion = form.solucion.data
         orden.ultimo_editor_id = current_user.id
         orden.fecha_actualizacion = datetime.utcnow()
 
@@ -214,7 +233,7 @@ def editar_orden(orden_id):
 # =========================================================
 # ELIMINAR ORDEN (SOLO ADMIN)
 # =========================================================
-@ordenes_bp.route('/orden/<int:orden_id>/eliminar', methods=['POST'])
+@ordenes_bp.route('/<int:orden_id>/eliminar', methods=['POST'])
 @login_required
 @roles_required('admin')
 def eliminar_orden(orden_id):
@@ -236,7 +255,7 @@ def eliminar_orden(orden_id):
 # =========================================================
 # DESCARGAR PDF DE LA ORDEN
 # =========================================================
-@ordenes_bp.route('/orden/<int:orden_id>/pdf')
+@ordenes_bp.route('/<int:orden_id>/pdf')
 @login_required
 def descargar_pdf_orden(orden_id):
     """

@@ -8,7 +8,7 @@ class Usuario(db.Model, UserMixin):
     __tablename__ = 'usuarios'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(150), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     rol = db.Column(db.String(20), default='lector')
     ordenes_creadas = db.relationship('Orden',foreign_keys='Orden.usuario_id',back_populates='usuario_creador')
     ordenes_editadas = db.relationship('Orden',foreign_keys='Orden.usuario_edita_id',back_populates='usuario_editor')
@@ -23,8 +23,9 @@ class Orden(db.Model):
     __tablename__ = 'ordenes'
     id = db.Column(db.Integer, primary_key=True)
     numero = db.Column(db.Integer, nullable=False, unique=True)
-    persona_reporta = db.Column(db.String(100), nullable=False)
+    persona_reporta = db.Column(db.String(200), nullable=False)
     descripcion = db.Column(db.Text, nullable=False)
+    solucion = db.Column(db.Text)
     fecha = db.Column(db.DateTime)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
     ultimo_editor_id = db.Column(db.Integer,db.ForeignKey('usuarios.id'),nullable=True)

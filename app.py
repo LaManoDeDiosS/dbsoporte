@@ -66,7 +66,7 @@ def load_user(user_id):
 
 # ----------- BLUEPRINTS -----------
 app.register_blueprint(auth_bp)
-app.register_blueprint(ordenes_bp)
+app.register_blueprint(ordenes_bp, url_prefix='/ordenes')
 app.register_blueprint(clientes_bp)
 app.register_blueprint(adjuntos_bp)
 
@@ -78,20 +78,6 @@ def index():
     return redirect(url_for('ordenes.ordenes'))
 
 
-# ----------- DETALLE ORDEN -----------
-@app.route('/orden/<int:orden_id>')
-@login_required
-def detalle_orden(orden_id):
-    orden = Orden.query.get_or_404(orden_id)
-    return render_template('orden_detalle.html', orden=orden)
-
-
-# ----------- IMPRIMIR ORDEN -----------
-@app.route('/orden/<int:orden_id>/imprimir')
-@login_required
-def imprimir_orden(orden_id):
-    orden = Orden.query.get_or_404(orden_id)
-    return render_template('orden_imprimir.html', orden=orden)
 
 
 # ----------- ERROR 403 -----------
