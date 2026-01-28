@@ -158,28 +158,49 @@ def ordenes():
 # =========================================================
 @ordenes_bp.route('/<int:orden_id>/editar', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin','tecnico')
+@roles_required('admin', 'tecnico')
 def editar_orden(orden_id):
-    """
-    Edita una orden y registra historial de cambios
-    """
 
     orden = Orden.query.get_or_404(orden_id)
-    form = OrdenForm(obj=orden)
 
-    # ✅ SIEMPRE cargar choices ANTES de validar
+    if orden.estado == 'cerrada':
+        flash('Esta orden está cerrada y no puede ser modificada.', 'warning')
+        return redirect(url_for('ordenes.ordenes'))
+
+    form = OrdenForm()
+
+    # 🔴 SIEMPRE cargar choices antes de validar
     clientes = Cliente.query.order_by(Cliente.nombre).all()
     form.cliente.choices = [(c.id, c.nombre) for c in clientes]
 
-    # Precargar solución en GET
+    # =====================
+    # GET → precargar
+    # =====================
     if request.method == 'GET':
+        form.cliente.data = orden.cliente_id
+        form.persona.data = orden.persona_reporta
+        form.descripcion.data = orden.descripcion
         form.solucion.data = orden.solucion
+        form.estado.data = orden.estado
 
-    if form.validate_on_submit():
-        orden.cliente_id = form.cliente.data
-        orden.persona_reporta = form.persona.data
-        orden.descripcion = form.descripcion.data
+    # =====================
+    # POST → guardar
+    # =====================
+    if request.method == 'POST':
+
+        # 🔐 VALIDACIÓN MANUAL SEGÚN ROL
+        if current_user.rol == 'admin':
+            if not form.cliente.data or not form.persona.data or not form.descripcion.data:
+                flash('Todos los campos son obligatorios', 'danger')
+                return render_template('orden_editar.html', form=form, orden=orden)
+
+            orden.cliente_id = form.cliente.data
+            orden.persona_reporta = form.persona.data
+            orden.descripcion = form.descripcion.data
+
+        # Técnico y admin
         orden.solucion = form.solucion.data
+        orden.estado = form.estado.data
         orden.ultimo_editor_id = current_user.id
         orden.fecha_actualizacion = datetime.utcnow()
 
@@ -188,47 +209,9 @@ def editar_orden(orden_id):
         flash('Orden actualizada correctamente', 'success')
         return redirect(url_for('ordenes.ordenes'))
 
-    # Valores antes del cambio
-    valores_anteriores = {
-        'cliente_id': orden.cliente_id,
-        'persona_reporta': orden.persona_reporta,
-        'descripcion': orden.descripcion
-    }
+    return render_template('orden_editar.html', form=form, orden=orden)
 
-    if form.validate_on_submit():
 
-        # Actualizar orden
-        orden.cliente_id = form.cliente.data
-        orden.persona_reporta = form.persona.data
-        orden.descripcion = form.descripcion.data
-        orden.solucion = form.solucion.data
-        orden.ultimo_editor_id = current_user.id
-        orden.fecha_actualizacion = datetime.utcnow()
-
-        # Registrar historial
-        for campo, valor_anterior in valores_anteriores.items():
-            valor_nuevo = getattr(orden, campo)
-
-            if str(valor_anterior) != str(valor_nuevo):
-                historial = HistorialOrden(
-                    orden_id=orden.id,
-                    usuario_id=current_user.id,
-                    campo=campo,
-                    valor_anterior=str(valor_anterior),
-                    valor_nuevo=str(valor_nuevo)
-                )
-                db.session.add(historial)
-
-        db.session.commit()
-
-        flash('Orden actualizada correctamente', 'success')
-        return redirect(url_for('ordenes.ordenes'))
-
-    return render_template(
-        'orden_editar.html',
-        form=form,
-        orden=orden
-    )
 
 # =========================================================
 # ELIMINAR ORDEN (SOLO ADMIN)

@@ -1,43 +1,64 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Editar Orden #{{ orden.numero }}</title>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Editar Orden #{{ orden.numero }}{% endblock %}
+{% block content %}
 
-<p>
-    <a href="{{ url_for('ordenes.ordenes') }}">⬅ Volver</a>
-</p>
+<a href="{{ url_for('ordenes.ordenes') }}" class="btn btn-secondary btn-sm mb-3">
+    ⬅ Volver
+</a>
 
 <h2>Editar Orden #{{ orden.numero }}</h2>
 
 <form method="POST" action="{{ url_for('ordenes.editar_orden', orden_id=orden.id) }}">
     {{ form.hidden_tag() }}
 
-    <p>
-        {{ form.cliente.label }}<br>
-        {{ form.cliente() }}
-    </p>
+    <!-- ============================= -->
+    <!-- DATOS ORIGINALES DE LA ORDEN -->
+    <!-- ============================= -->
 
-    <p>
-        {{ form.persona.label }}<br>
-        {{ form.persona() }}
-    </p>
+    {% if current_user.rol == 'admin' %}
+        <div class="mb-3">
+            {{ form.cliente.label(class="form-label") }}
+            {{ form.cliente(class="form-select") }}
+        </div>
 
-    <p>
-        {{ form.descripcion.label }}<br>
-        {{ form.descripcion(rows=4) }}
-    </p>
-    <p>
-        {{ form.solucion.label }}<br>
-        {{ form.solucion(rows=4 , class="form-control") }}
-    </p>
+        <div class="mb-3">
+            {{ form.persona.label(class="form-label") }}
+            {{ form.persona(class="form-control") }}
+        </div>
 
-    <p>
-        {{ form.submit(value='Guardar cambios') }}
-    </p>
+        <div class="mb-3">
+            {{ form.descripcion.label(class="form-label") }}
+            {{ form.descripcion(class="form-control", rows=4) }}
+        </div>
+    {% else %}
+        <p><strong>Cliente:</strong> {{ orden.cliente.nombre }}</p>
+        <p><strong>Persona que reporta:</strong> {{ orden.persona_reporta }}</p>
+        <p><strong>Descripción:</strong></p>
+        <div class="border p-2 bg-light mb-3">
+            {{ orden.descripcion }}
+        </div>
+    {% endif %}
+
+    <!-- ============================= -->
+    <!-- RESPUESTA DEL TÉCNICO -->
+    <!-- ============================= -->
+
+    {% if current_user.rol in ['admin', 'tecnico'] %}
+        <div class="mb-3">
+            {{ form.solucion.label(class="form-label") }}
+            {{ form.solucion(class="form-control", rows=4) }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.estado.label(class="form-label") }}
+            {{ form.estado(class="form-select") }}
+        </div>
+
+        <button type="submit" class="btn btn-success">
+            Guardar cambios
+        </button>
+    {% endif %}
+
 </form>
 
-</body>
-</html>
+{% endblock %}

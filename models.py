@@ -22,8 +22,8 @@ class Cliente(db.Model):
 class Orden(db.Model):
     __tablename__ = 'ordenes'
     id = db.Column(db.Integer, primary_key=True)
-    numero = db.Column(db.Integer, nullable=False, unique=True)
-    persona_reporta = db.Column(db.String(200), nullable=False)
+    numero = db.Column(db.Integer, unique=True, nullable=False)
+    persona_reporta = db.Column(db.String(100), nullable=False)
     descripcion = db.Column(db.Text, nullable=False)
     solucion = db.Column(db.Text)
     fecha = db.Column(db.DateTime)
@@ -31,7 +31,7 @@ class Orden(db.Model):
     ultimo_editor_id = db.Column(db.Integer,db.ForeignKey('usuarios.id'),nullable=True)
     ultimo_editor = db.relationship('Usuario',foreign_keys=[ultimo_editor_id])
     usuario_edita_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
-    cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'))
+    cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=False)
     usuario_creador = db.relationship('Usuario',foreign_keys=[usuario_id],back_populates='ordenes_creadas')
     usuario_editor = db.relationship('Usuario',foreign_keys=[usuario_edita_id],back_populates='ordenes_editadas')
     cliente = db.relationship('Cliente', back_populates='ordenes')
@@ -39,6 +39,7 @@ class Orden(db.Model):
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
     fecha_actualizacion = db.Column(db.DateTime, onupdate=datetime.utcnow)
     historial = db.relationship('HistorialOrden',backref='orden',order_by='HistorialOrden.fecha.desc()')
+    estado = db.Column(db.String(20),default='abierta',nullable=False)
 
 
 class HistorialOrden(db.Model):

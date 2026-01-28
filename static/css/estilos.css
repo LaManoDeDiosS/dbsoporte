@@ -1,0 +1,29 @@
+.table-fixed {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.table-fixed td,
+.table-fixed th {
+    word-wrap: break-word;
+    white-space: normal;
+    vertical-align: middle;
+}
+
+/* Observación */
+.col-obs {
+    max-width: 260px;
+}
+
+/* Archivos */
+.col-files {
+    width: 140px;
+    text-align: center;
+}
+
+/* Acciones */
+.col-actions {
+    width: 140px;
+    text-align: center;
+}
+

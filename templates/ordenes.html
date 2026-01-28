@@ -2,7 +2,39 @@
 {% block title %}Órdenes de Servicio{% endblock %}
 {% block content %}
 
-<h2>Órdenes de Servicio</h2>
+{% if current_user.rol == 'admin' %}
+<hr>
+
+<h3>Registrar nueva orden</h3>
+
+<form method="POST" enctype="multipart/form-data" class="mb-4">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+        {{ form.cliente.label(class="form-label") }}
+        {{ form.cliente(class="form-select") }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.persona.label(class="form-label") }}
+        {{ form.persona(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.descripcion.label(class="form-label") }}
+        {{ form.descripcion(class="form-control", rows=4) }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.archivos.label(class="form-label") }}
+        {{ form.archivos(class="form-control", multiple=True) }}
+    </div>
+
+    <button class="btn btn-success">
+        Crear orden
+    </button>
+</form>
+{% endif %}
 
 <p>
     Usuario: <strong>{{ current_user.email }}</strong> |
@@ -11,26 +43,9 @@
 
 <hr>
 
-{% if current_user.rol == 'admin' %}
-<h3>Registrar nueva orden</h3>
-
-<form method="POST" enctype="multipart/form-data">
-    {{ form.hidden_tag() }}
-
-    <p>{{ form.cliente.label }}<br>{{ form.cliente() }}</p>
-    <p>{{ form.persona.label }}<br>{{ form.persona() }}</p>
-    <p>{{ form.descripcion.label }}<br>{{ form.descripcion(rows=4) }}</p>
-    <p>{{ form.archivos.label }}<br>{{ form.archivos(multiple=True) }}</p>
-
-    <p>{{ form.submit(value='Guardar orden') }}</p>
-</form>
-
-<hr>
-{% endif %}
-
 <h3>Buscar orden</h3>
 
-<form method="GET" action="{{ url_for('ordenes.ordenes') }}" class="row g-2 mb-3">
+<form method="GET" action="{{ url_for('ordenes.ordenes') }}" class="row g-2 mb-4">
 
     <div class="col-md-3">
         <input type="number"
@@ -53,9 +68,7 @@
             <option value="">Todos los clientes</option>
             {% for c in clientes %}
                 <option value="{{ c.id }}"
-                    {% if cliente_busqueda and cliente_busqueda == c.id|string %}
-                        selected
-                    {% endif %}>
+                    {% if cliente_busqueda == c.id %}selected{% endif %}>
                     {{ c.nombre }}
                 </option>
             {% endfor %}
@@ -63,18 +76,15 @@
     </div>
 
     <div class="col-md-2 d-grid">
-        <button type="submit" class="btn btn-primary">
-            Buscar
-        </button>
+        <button class="btn btn-primary">Buscar</button>
     </div>
 
 </form>
 
-
 <h3>Listado de órdenes</h3>
 
 <div class="table-responsive">
-<table class="table table-striped table-hover align-middle">
+<table class="table table-striped table-hover align-middle table-fixed">
 
     <thead class="table-dark">
         <tr>
@@ -85,6 +95,7 @@
             <th>Creado por</th>
             <th>Creación</th>
             <th>Edición</th>
+            <th>Estado</th>
             <th>Archivos</th>
             <th>Editor</th>
             <th>Acciones</th>
@@ -102,30 +113,53 @@
             </td>
 
             <td>{{ o.cliente.nombre }}</td>
+
             <td>{{ o.persona_reporta }}</td>
-            <td>{{ o.descripcion }}</td>
+
+            <td class="col-obs">
+                {{ o.descripcion[:80] }}
+                {% if o.descripcion|length > 80 %}…{% endif %}
+            </td>
+
+            <td>{{ o.usuario_creador.email if o.usuario_creador else '—' }}</td>
 
             <td>
-                {{ o.usuario_creador.email if o.usuario_creador else 'Desconocido' }}
+                {{ o.fecha_creacion.strftime('%Y-%m-%d %H:%M')
+                   if o.fecha_creacion else '—' }}
             </td>
 
             <td>
-                {{ o.fecha_creacion.strftime('%Y-%m-%d %H:%M') if o.fecha_creacion else '—' }}
+                {{ o.fecha_actualizacion.strftime('%Y-%m-%d %H:%M')
+                   if o.fecha_actualizacion else '—' }}
             </td>
 
             <td>
-                {{ o.fecha_actualizacion.strftime('%Y-%m-%d %H:%M') if o.fecha_actualizacion else '—' }}
+                {% if o.estado == 'abierta' %}
+                    <span class="badge bg-warning text-dark">Abierta</span>
+                {% elif o.estado == 'en_proceso' %}
+                    <span class="badge bg-primary">En proceso</span>
+                {% if o.estado != 'cerrada' %}
+    <a href="{{ url_for('ordenes.editar_orden', orden_id=o.id) }}"
+       class="btn btn-sm btn-primary">
+        Editar
+    </a>
+{% else %}
+    <span class="text-muted">Cerrada</span>
+{% endif %}
+                {% endif %}
             </td>
 
-            <td>
+            <td class="col-files">
                 {% if o.adjuntos %}
                     {% for a in o.adjuntos %}
-                        <a href="{{ url_for('static', filename='uploads/' ~ a.archivo) }}" target="_blank">
-                            {{ a.archivo }}
+                        <a href="{{ url_for('static', filename='uploads/' ~ a.archivo) }}"
+                           class="btn btn-sm btn-outline-secondary mb-1"
+                           target="_blank">
+                            Ver archivo
                         </a><br>
                     {% endfor %}
                 {% else %}
-                    Sin archivos
+                    —
                 {% endif %}
             </td>
 
@@ -133,35 +167,23 @@
                 {{ o.ultimo_editor.email if o.ultimo_editor else '—' }}
             </td>
 
-            <!-- ACCIONES -->
-            <td>
-                <div class="d-flex flex-wrap gap-2">
+            <td class="text-center">
+                <a href="{{ url_for('ordenes.editar_orden', orden_id=o.id) }}"
+                   class="btn btn-sm btn-primary">
+                    Editar
+                </a>
 
-                    {% if current_user.rol in ['admin', 'tecnico'] %}
-                        <a href="{{ url_for('ordenes.editar_orden', orden_id=o.id) }}"
-                           class="btn btn-sm btn-primary">
-                            Editar
-                        </a>
-                    {% endif %}
-
-                    {% if current_user.rol == 'admin' %}
-                        <form method="POST"
-                              action="{{ url_for('ordenes.eliminar_orden', orden_id=o.id) }}"
-                              style="margin:0;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit"
-                                    class="btn btn-sm btn-danger"
-                                    onclick="return confirm('¿Eliminar esta orden?')">
-                                Eliminar
-                            </button>
-                        </form>
-                    {% endif %}
-
-                    {% if current_user.rol not in ['admin', 'tecnico'] %}
-                        —
-                    {% endif %}
-
-                </div>
+                {% if current_user.rol == 'admin' %}
+                <form method="POST"
+                      action="{{ url_for('ordenes.eliminar_orden', orden_id=o.id) }}"
+                      style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-danger"
+                            onclick="return confirm('¿Eliminar orden?')">
+                        Eliminar
+                    </button>
+                </form>
+                {% endif %}
             </td>
 
         </tr>
